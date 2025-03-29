@@ -1,0 +1,37 @@
+2025-03-29 00:59:22,822 - INFO - <BrokerConnection client_id=kafka-python-producer-1, node_id=bootstrap-0 host=localhost:9092 <connecting> [IPv6 ('::1', 9092, 0, 0)]>: connecting to localhost:9092 [('::1', 9092, 0, 0) IPv6]
+2025-03-29 00:59:22,826 - INFO - <BrokerConnection client_id=kafka-python-producer-1, node_id=bootstrap-0 host=localhost:9092 <checking_api_versions_recv> [IPv6 ('::1', 9092, 0, 0)]>: Broker version identified as 2.6
+2025-03-29 00:59:22,826 - INFO - <BrokerConnection client_id=kafka-python-producer-1, node_id=bootstrap-0 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Connection complete.
+2025-03-29 00:59:22,827 - INFO - <BrokerConnection client_id=kafka-python-2.1.4, node_id=bootstrap-0 host=localhost:9092 <connecting> [IPv6 ('::1', 9092, 0, 0)]>: connecting to localhost:9092 [('::1', 9092, 0, 0) IPv6]
+2025-03-29 00:59:22,830 - INFO - <BrokerConnection client_id=kafka-python-2.1.4, node_id=bootstrap-0 host=localhost:9092 <checking_api_versions_recv> [IPv6 ('::1', 9092, 0, 0)]>: Broker version identified as 2.6
+2025-03-29 00:59:22,831 - INFO - <BrokerConnection client_id=kafka-python-2.1.4, node_id=bootstrap-0 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Connection complete.
+2025-03-29 00:59:22,831 - WARNING - group_id is None: disabling auto-commit.
+2025-03-29 00:59:22,831 - INFO - Updating subscribed topics to: ('client-requests',)
+2025-03-29 00:59:22,832 - INFO - Kafka server started
+2025-03-29 00:59:22,832 - INFO - Updated partition assignment: [TopicPartition(topic='client-requests', partition=0)]
+2025-03-29 00:59:22,833 - INFO - <BrokerConnection client_id=kafka-python-2.1.4, node_id=1 host=localhost:9092 <connecting> [IPv6 ('::1', 9092, 0, 0)]>: connecting to localhost:9092 [('::1', 9092, 0, 0) IPv6]
+2025-03-29 00:59:22,833 - INFO - <BrokerConnection client_id=kafka-python-2.1.4, node_id=1 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Connection complete.
+2025-03-29 00:59:22,833 - INFO - <BrokerConnection client_id=kafka-python-2.1.4, node_id=bootstrap-0 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Closing connection. 
+2025-03-29 00:59:36,228 - INFO - <BrokerConnection client_id=kafka-python-producer-1, node_id=1 host=localhost:9092 <connecting> [IPv6 ('::1', 9092, 0, 0)]>: connecting to localhost:9092 [('::1', 9092, 0, 0) IPv6]
+2025-03-29 00:59:36,228 - INFO - <BrokerConnection client_id=kafka-python-producer-1, node_id=1 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Connection complete.
+2025-03-29 00:59:36,228 - INFO - <BrokerConnection client_id=kafka-python-producer-1, node_id=bootstrap-0 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Closing connection. 
+2025-03-29 00:59:36,369 - INFO - Sent message to client-responses-client1: hi
+2025-03-29 00:59:42,097 - INFO - Sent initial response to client-responses-client-1
+2025-03-29 00:59:47,097 - INFO - Sent initial response to client-responses-client-1
+2025-03-29 00:59:52,099 - INFO - Sent initial response to client-responses-client-1
+2025-03-29 00:59:57,100 - INFO - Sent initial response to client-responses-client-1
+2025-03-29 01:00:00,869 - INFO - Sent message to client-responses-client-1: hi
+2025-03-29 01:00:02,103 - INFO - Sent initial response to client-responses-client-1
+2025-03-29 01:00:07,104 - INFO - Sent initial response to client-responses-client-1
+2025-03-29 01:00:12,107 - INFO - Sent initial response to client-responses-client-1
+2025-03-29 01:00:17,108 - INFO - Sent initial response to client-responses-client-1
+2025-03-29 01:00:22,110 - INFO - Sent initial response to client-responses-client-1
+2025-03-29 01:00:27,112 - INFO - Sent initial response to client-responses-client-1
+2025-03-29 01:00:27,424 - INFO - Sent message to client-responses-client-1: Hello
+2025-03-29 01:00:32,113 - INFO - Sent initial response to client-responses-client-1
+2025-03-29 01:00:37,116 - INFO - Sent initial response to client-responses-client-1
+2025-03-29 01:00:43,059 - ERROR - Error processing stdin input: 
+2025-03-29 01:00:43,059 - INFO - Shutting down Kafka server
+2025-03-29 01:00:43,059 - INFO - Closing the Kafka producer with 4294967.0 secs timeout.
+2025-03-29 01:00:43,060 - INFO - <BrokerConnection client_id=kafka-python-producer-1, node_id=1 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Closing connection. 
+2025-03-29 01:00:43,499 - ERROR - Error in request processor: KafkaConsumer is closed
+2025-03-29 01:00:43,499 - INFO - <BrokerConnection client_id=kafka-python-2.1.4, node_id=1 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Closing connection. 
