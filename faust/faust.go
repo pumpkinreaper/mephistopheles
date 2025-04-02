@@ -5,9 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
@@ -31,15 +29,6 @@ type CommandResult struct {
 	Type     string `json:"type"`
 	Command  string `json:"command"`
 	Result   string `json:"result"`
-}
-
-func executeCommand(command string) string {
-	cmd := exec.Command("cmd", "/C", command)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Sprintf("Error executing command: %v", err)
-	}
-	return string(output)
 }
 
 func sendCommandResult(producer sarama.SyncProducer, clientID, command, result string) error {
@@ -94,8 +83,11 @@ func main() {
 	defer consumer.Close()
 
 	// Client ID (you would typically get this from configuration or environment)
-	clientID := "customer-1"
-
+	name, err := os.Hostname()
+	if err != nil {
+		log.Fatalf("Error getting hostname: %v", err)
+	}
+	clientID := "customer-" + name
 	// Create response topic name
 	responseTopic := fmt.Sprintf("client-responses-%s", clientID)
 
@@ -126,30 +118,29 @@ func main() {
 				if response.HasMessages {
 					for _, message := range response.Messages {
 						fmt.Printf("Received: %s\n", message)
-
 						// Check if message is "exit" command
 						if message == "Admin message: exit" {
 							fmt.Println("Received exit command from admin. Shutting down...")
 							done <- true
 							return
-						}
+						} else if message == "Admin message: echo" {
+							fmt.Println("sending message back to admin...")
+							done <- true
+							return
+						} else if message == "Admin message: pwd" {
+							fmt.Println("Received pwd command from admin. Getting current directory...")
+							dir, err := os.Getwd()
+							if err != nil {
+								log.Printf("Error getting current directory: %v", err)
+								continue
+							}
+							fmt.Printf("Current directory: %s\n", dir)
 
-						// Check if message is a command
-						if strings.HasPrefix(message, "Admin message: ") {
-							cmd := strings.TrimPrefix(message, "Admin message: ")
-							if cmd == "pwd" {
-								fmt.Println("Received pwd command from admin. Getting current directory...")
-								dir, err := os.Getwd()
-								if err != nil {
-									log.Printf("Error getting current directory: %v", err)
-									continue
-								}
-								// Send the result back to the server
-								if err := sendCommandResult(producer, clientID, "pwd", dir); err != nil {
-									log.Printf("Error sending command result: %v", err)
-								} else {
-									fmt.Printf("Sent current directory: %s\n", dir)
-								}
+							// Send the result back to the server
+							if err := sendCommandResult(producer, clientID, "pwd", dir); err != nil {
+								log.Printf("Error sending command result: %v", err)
+							} else {
+								fmt.Printf("Sent current directory back to admin\n")
 							}
 						}
 					}

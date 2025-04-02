@@ -7,115 +7,183 @@ import uuid
 import logging
 import sys
 
-# Kafka configuration
-KAFKA_BROKER = 'localhost:9092'
-REQUEST_TOPIC = 'client-requests'
-RESPONSE_TOPIC_TEMPLATE = 'client-responses-{}'
+class KafkaServer:
+    def __init__(self):
+        # Kafka configuration
+        self.broker = 'localhost:9092'
+        self.topic = 'server-messages'
+        self.response_topic_template = 'client-responses-{}'
+        
+        # Create producer for sending responses
+        self.producer = KafkaProducer(
+            bootstrap_servers=[self.broker],
+            value_serializer=lambda x: json.dumps(x).encode('utf-8')
+        )
+        
+        # Create consumer for receiving messages
+        self.consumer = KafkaConsumer(
+            self.topic,
+            bootstrap_servers=[self.broker],
+            value_deserializer=lambda x: x,
+            auto_offset_reset='latest',
+            enable_auto_commit=True
+        )
+        
+        # Track known clients
+        self.known_clients = set()
+        self.admin_clients = set()
+        
+        # Set up logging
+        logging.basicConfig(
+            filename='kafka_server.log',
+            level=logging.INFO,
+            format='%(asctime)s - %(levelname)s - %(message)s'
+        )
 
-# Set up logging
-logging.basicConfig(
-    filename='kafka_server.log',
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
-
-# Create Kafka producer for sending responses
-producer = KafkaProducer(
-    bootstrap_servers=[KAFKA_BROKER],
-    value_serializer=lambda x: json.dumps(x).encode('utf-8')
-)
-
-# Create Kafka consumer for receiving requests
-consumer = KafkaConsumer(
-    REQUEST_TOPIC,
-    bootstrap_servers=[KAFKA_BROKER],
-    value_deserializer=lambda x: json.loads(x.decode('utf-8')),
-    auto_offset_reset='latest',
-    enable_auto_commit=True
-)
-
-def process_request(request_data):
-    """Process received requests and generate responses"""
-    client_id = request_data.get('client_id')
-    if not client_id:
-        logging.warning("Received request without client_id")
-        return
-
-    # Generate response topic for this client
-    response_topic = RESPONSE_TOPIC_TEMPLATE.format(client_id)
-    
-    # Simulate processing time
-    time.sleep(1)
-    
-    # Prepare response
-    response = {
-        'client_id': client_id,
-        'has_messages': True,
-        'messages': ["Waiting for user input..."]
-    }
-    
-    # Send response back to client-specific topic
-    producer.send(response_topic, response)
-    logging.info(f"Sent initial response to {response_topic}")
-
-def request_processor():
-    """Process incoming requests"""
-    while True:
+    def send_response(self, client_id, response):
+        """Send response to a client"""
         try:
-            for message in consumer:
-                process_request(message.value)
+            self.producer.send(
+                self.response_topic_template.format(client_id),
+                response
+            )
         except Exception as e:
-            logging.error(f"Error in request processor: {e}")
-            time.sleep(5)
+            logging.error(f"Error sending response to {client_id}: {e}")
 
-def send_message_to_client(client_id, message):
-    """Send a message to a specific client"""
-    response_topic = RESPONSE_TOPIC_TEMPLATE.format(client_id)
-    response = {
-        'client_id': client_id,
-        'has_messages': True,
-        'messages': [message]
-    }
-    producer.send(response_topic, response)
-    logging.info(f"Sent message to {response_topic}: {message}")
+    def handle_registration(self, client_id, is_admin):
+        """Handle client registration"""
+        self.known_clients.add(client_id)
+        if is_admin:
+            self.admin_clients.add(client_id)
+            logging.info(f"Admin client registered: {client_id}")
+        else:
+            logging.info(f"Customer client registered: {client_id}")
+        
+        # Send welcome message
+        response = {
+            'client_id': client_id,
+            'has_messages': True,
+            'messages': [f"Welcome {'admin' if is_admin else 'customer'} client {client_id}!"]
+        }
+        self.send_response(client_id, response)
 
-def stdin_processor():
-    """Process stdin input for sending messages"""
-    print("Enter messages in format 'client_id:message' (e.g., 'client-1:Hello')")
-    while True:
+    def handle_list_clients(self, client_id):
+        """Handle client list request"""
+        if client_id in self.admin_clients:
+            # For admin clients, show all customers
+            customers = self.known_clients - self.admin_clients
+            if customers:
+                response = {
+                    'client_id': client_id,
+                    'has_messages': True,
+                    'messages': [f"Available customers: {', '.join(customers)}"]
+                }
+            else:
+                response = {
+                    'client_id': client_id,
+                    'has_messages': True,
+                    'messages': ["No customers available"]
+                }
+        else:
+            # For regular clients, show only admin clients
+            if self.admin_clients:
+                response = {
+                    'client_id': client_id,
+                    'has_messages': True,
+                    'messages': [f"Available admins: {', '.join(self.admin_clients)}"]
+                }
+            else:
+                response = {
+                    'client_id': client_id,
+                    'has_messages': True,
+                    'messages': ["No admins available"]
+                }
+        
+        self.send_response(client_id, response)
+
+    def handle_message(self, client_id, target_client, message):
+        """Handle message between clients"""
+        if client_id not in self.admin_clients:
+            logging.warning(f"Non-admin client {client_id} attempted to send message")
+            response = {
+                'client_id': client_id,
+                'has_messages': True,
+                'messages': ["Error: Only admin clients can send messages"]
+            }
+            self.send_response(client_id, response)
+            return
+
+        if target_client not in self.known_clients:
+            logging.warning(f"Target client {target_client} not found")
+            response = {
+                'client_id': client_id,
+                'has_messages': True,
+                'messages': [f"Error: Target client {target_client} not found"]
+            }
+            self.send_response(client_id, response)
+            return
+
+        # Forward message to target client
+        response = {
+            'client_id': target_client,
+            'has_messages': True,
+            'messages': [f"Admin message: {message}"]
+        }
+        self.send_response(target_client, response)
+        logging.info(f"Message forwarded from {client_id} to {target_client}")
+
+    def handle_command_result(self, client_id, command, result):
+        """Handle command results from customers"""
+        logging.info(f"Received command result from {client_id}: {command}")
+        
+        # Find the admin client that sent the command
+        for admin_id in self.admin_clients:
+            response = {
+                'client_id': admin_id,
+                'has_messages': True,
+                'messages': [f"Command result from {client_id} ({command}):\n{result}"]
+            }
+            self.send_response(admin_id, response)
+            logging.info(f"Forwarded command result to admin {admin_id}")
+            return  # Send to first admin client and return
+        
+        logging.warning("No admin clients found to forward command result")
+
+    def process_message(self, message):
+        """Process incoming messages"""
         try:
-            line = input().strip()
-            if not line:
-                continue
-                
-            if ':' not in line:
-                print("Invalid format. Use 'client_id:message'")
-                continue
-                
-            client_id, message = line.split(':', 1)
-            send_message_to_client(client_id, message)
-            print(f"Message sent to {client_id}")
+            data = json.loads(message.value.decode('utf-8'))
+            client_id = data.get('client_id')
+            msg_type = data.get('type')
+
+            logging.info(f"Processing message type {msg_type} from client {client_id}")
+
+            if msg_type == 'register':
+                self.handle_registration(client_id, data.get('is_admin', False))
+            elif msg_type == 'list_clients':
+                self.handle_list_clients(client_id)
+            elif msg_type == 'message':
+                self.handle_message(client_id, data.get('target_client'), data.get('message'))
+            elif msg_type == 'command_result':
+                self.handle_command_result(client_id, data.get('command'), data.get('result'))
+            else:
+                logging.warning(f"Unknown message type: {msg_type}")
         except Exception as e:
-            logging.error(f"Error processing stdin input: {e}")
-            print(f"Error: {e}")
+            logging.error(f"Error processing message: {e}")
+            logging.error(f"Message content: {message.value}")
+
+    def run(self):
+        """Run the server"""
+        logging.info("Starting Kafka server")
+        try:
+            for message in self.consumer:
+                self.process_message(message)
+        except KeyboardInterrupt:
+            logging.info("Shutting down Kafka server")
+        finally:
+            self.producer.close()
+            self.consumer.close()
 
 if __name__ == '__main__':
-    # Start request processor thread
-    request_thread = threading.Thread(target=request_processor, daemon=True)
-    request_thread.start()
-    
-    # Start stdin processor thread
-    stdin_thread = threading.Thread(target=stdin_processor, daemon=True)
-    stdin_thread.start()
-    
-    print("Kafka server started. Press Ctrl+C to stop.")
-    logging.info("Kafka server started")
-    
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        print("\nShutting down...")
-        logging.info("Shutting down Kafka server")
-        producer.close()
-        consumer.close() 
+    server = KafkaServer()
+    server.run() 
